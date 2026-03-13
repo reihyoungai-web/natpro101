@@ -132,57 +132,59 @@ class GameApp {
     }
     
     async handleGameOver(score) {
-        // 점수 저장
-        await this.saveScore(this.playerEmail, score);
+        // 점수 저장 (localStorage)
+        this.saveScore(this.playerEmail, score);
         
         // 최종 점수 표시
         document.getElementById('final-score-value').textContent = score;
         
         // 랭킹 로드 및 표시
-        await this.loadAndShowRanking(score);
+        this.loadAndShowRanking(score);
         
         this.showScreen('ranking');
     }
     
-    async saveScore(email, score) {
+    // ✅ localStorage로 점수 저장 (백엔드 불필요)
+    saveScore(email, score) {
         try {
-            const response = await fetch('tables/players', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    email: email,
-                    score: score,
-                    played_at: new Date().toISOString()
-                })
+            const key = 'jeju_game_scores';
+            const existing = localStorage.getItem(key);
+            const records = existing ? JSON.parse(existing) : [];
+            
+            records.push({
+                email: email,
+                score: score,
+                played_at: new Date().toISOString()
             });
             
-            if (!response.ok) {
-                throw new Error('Failed to save score');
+            // 최대 200개까지만 보관
+            if (records.length > 200) {
+                records.sort((a, b) => b.score - a.score);
+                records.splice(200);
             }
             
-            return await response.json();
+            localStorage.setItem(key, JSON.stringify(records));
         } catch (error) {
             console.error('Error saving score:', error);
         }
     }
     
-    async loadAndShowRanking(currentScore) {
+    // ✅ localStorage에서 랭킹 불러오기
+    loadAndShowRanking(currentScore) {
         try {
-            // 상위 점수 가져오기
-            const response = await fetch('tables/players?sort=-score&limit=100');
-            const result = await response.json();
+            const key = 'jeju_game_scores';
+            const existing = localStorage.getItem(key);
+            const records = existing ? JSON.parse(existing) : [];
             
             // 중복 이메일 제거 (각 이메일당 최고 점수만)
             const emailScores = {};
-            result.data.forEach(record => {
+            records.forEach(record => {
                 if (!emailScores[record.email] || record.score > emailScores[record.email].score) {
                     emailScores[record.email] = record;
                 }
             });
             
-            // 배열로 변환하고 점수순 정렬
+            // 배열로 변환하고 점수순 정렬, 상위 10명
             const rankings = Object.values(emailScores)
                 .sort((a, b) => b.score - a.score)
                 .slice(0, 10);
@@ -276,11 +278,3 @@ class GameApp {
 document.addEventListener('DOMContentLoaded', () => {
     window.gameApp = new GameApp();
 });
-
-// PWA 지원을 위한 서비스 워커 등록 (선택사항)
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        // 서비스 워커는 HTTPS에서만 작동
-        // navigator.serviceWorker.register('/sw.js');
-    });
-}
