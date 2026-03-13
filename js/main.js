@@ -117,18 +117,22 @@ class GameApp {
     startGame() {
         this.showScreen('game');
         retroAudio.stopBGM();
-        
-        // 게임 초기화
-        this.game = new JejuGame(this.gameCanvas);
-        this.game.onGameOver = (score) => this.handleGameOver(score);
-        
-        // 점수 초기화
-        document.getElementById('score').textContent = '0';
-        
-        // 게임 시작
-        setTimeout(() => {
-            this.game.start();
-        }, 500);
+
+        // ✅ 화면이 display:flex로 전환된 후 캔버스 크기가 확정되도록
+        // requestAnimationFrame으로 DOM 리플로우 완료 후 게임 생성
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                // 점수 초기화
+                document.getElementById('score').textContent = '0';
+
+                // 게임 초기화 (캔버스가 보이는 상태에서 생성)
+                this.game = new JejuGame(this.gameCanvas);
+                this.game.onGameOver = (score) => this.handleGameOver(score);
+
+                // 게임 시작
+                this.game.start();
+            });
+        });
     }
     
     async handleGameOver(score) {

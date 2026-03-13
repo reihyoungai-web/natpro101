@@ -48,8 +48,9 @@ class JejuGame {
     }
     
     resize() {
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
+        // ✅ window 크기 기준으로 설정 (캔버스가 숨겨져 있어도 안전)
+        this.canvas.width = window.innerWidth || document.documentElement.clientWidth;
+        this.canvas.height = window.innerHeight || document.documentElement.clientHeight;
         this.groundY = this.canvas.height * 0.75;
         this.player.x = this.canvas.width / 2 - this.player.width / 2;
         this.player.y = this.groundY - this.player.height;
